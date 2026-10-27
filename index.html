@@ -1,345 +1,285 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Atlas Quest — Explora el mundo</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas Quest 🌍</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#0b1020;--panel:#151d32;--text:#f3f6ff;--muted:#aebbd5;--accent:#67e8c2;--blue:#79a7ff;--bad:#ff7185;--line:#2b3857}
+:root{color-scheme:dark;--bg:#101827;--panel:#1c2940;--accent:#52e0b5;--text:#f4f7ff}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at top,#1c3150,#0b1020 65%);color:var(--text);font:16px/1.5 system-ui,sans-serif;min-height:100vh}
-button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:11px 15px;background:var(--blue);color:#091329;font-weight:750}
-button:disabled{cursor:default;opacity:.75}
-button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-.wrap{max-width:1100px;margin:auto;padding:22px}
-.top{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
-.brand{display:flex;gap:12px;align-items:center}
-.logo{font-size:34px}
-.brand h1{margin:0;font-size:clamp(1.5rem,4vw,2.1rem)}
-.tag,.sub,.tiny,.footer{color:var(--muted)}
-.tag{margin:2px 0}
-.stats{display:flex;gap:8px;flex-wrap:wrap}
-.pill{background:#1c2944;border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--accent);font-weight:700}
-.hero{padding:28px 0 16px}
-.hero h2{font-size:clamp(1.5rem,4vw,2.4rem);margin:0 0 8px}
-.hero p{color:var(--muted);max-width:720px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.card,.play{background:linear-gradient(150deg,var(--panel),#11192b);border:1px solid var(--line);border-radius:18px;padding:18px}
-.game{display:flex;flex-direction:column;gap:9px;min-height:185px}
-.game .emoji{font-size:30px}
-.game h3{margin:0;font-size:1.06rem}
-.game p{color:var(--muted);margin:0;flex:1;font-size:.93rem}
-.game button{width:100%}
-.section-title{margin:24px 0 12px}
-.hidden{display:none!important}
-.play{margin-top:22px;padding:clamp(16px,4vw,28px)}
-.playhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.playhead h2{margin:0}
-.progress{height:8px;background:#26314c;border-radius:99px;overflow:hidden;margin:16px 0}
-.progress div{height:100%;width:0;background:var(--accent);transition:width .2s}
-.question{font-size:clamp(1.25rem,3vw,1.8rem);font-weight:800;margin:16px 0}
-.extra{color:var(--muted);margin-bottom:12px}
-.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.answers button{background:#233250;color:var(--text);border:1px solid #405275;text-align:left;min-height:48px}
-.answers button:hover:not(:disabled){border-color:var(--accent);background:#2a405f}
-.answers button.correct{background:#164d43;border-color:var(--accent);color:#e7fff7}
-.answers button.wrong{background:#552535;border-color:var(--bad)}
-#map{height:390px;width:100%;border-radius:14px;margin:16px 0;display:none;border:1px solid var(--line);z-index:1}
-.feedback{min-height:28px;margin:14px 0;font-weight:700}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.secondary{background:#293754;color:var(--text);border:1px solid var(--line)}
-.list{padding-left:20px;color:var(--muted)}
-.footer{font-size:.82rem;padding:28px 0}
-@media(max-width:540px){.wrap{padding:14px}.stats{width:100%}#map{height:320px}}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif}
+header{padding:20px;text-align:center;background:#17243a;border-bottom:1px solid #34445d}
+h1{margin:0;color:var(--accent)}
+header p{margin:6px 0 0;color:#b8c5d8}
+main{max-width:1100px;margin:auto;padding:16px}
+.panel{background:var(--panel);padding:16px;border-radius:15px;margin-bottom:16px}
+.stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.stat{background:#263750;padding:8px 13px;border-radius:10px}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
+button,input{font:inherit;border-radius:9px;padding:11px}
+button{border:0;background:#314662;color:white;cursor:pointer}
+button:hover{filter:brightness(1.18)}
+button.active,.primary{background:var(--accent);color:#102b2b;font-weight:700}
+input{width:100%;background:#101827;color:white;border:1px solid #50627c;margin:5px 0}
+#map{height:360px;border-radius:12px;z-index:1}
+#question{font-size:1.2rem;font-weight:700;margin:12px 0}
+#answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+#feedback{min-height:28px;margin:12px 0}
+.small{color:#bdc9dc;font-size:.9rem}
+.hidden{display:none}
+a{color:var(--accent)}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header class="top">
-  <div class="brand">
-    <div class="logo">🧭</div>
-    <div><h1>Atlas Quest</h1><p class="tag">Explora. Descubre. Conquista el mapa.</p></div>
-  </div>
+<header>
+  <h1>🌍 ATLAS QUEST</h1>
+  <p>Explora el mundo. Aprende jugando. Conquista el mapa.</p>
   <div class="stats">
-    <span class="pill">⭐ XP: <span id="xp">0</span></span>
-    <span class="pill">🏅 Rango: <span id="rank">Novato</span></span>
-    <span class="pill">🔥 Aciertos: <span id="streak">0</span></span>
+    <div class="stat">⭐ XP: <span id="xp">0</span></div>
+    <div class="stat">🏅 Rango: <span id="rank">Explorador</span></div>
+    <div class="stat">🔥 Aciertos: <span id="wins">0</span></div>
   </div>
 </header>
 
-<section class="hero">
-  <h2>Tu próxima aventura empieza aquí</h2>
-  <p>Entrena tu memoria geográfica con países, capitales, fronteras, banderas y mapas interactivos. Elige un desafío y empieza a explorar.</p>
+<main>
+<section class="panel">
+  <h2>🎮 Elige tu misión</h2>
+  <div class="modes" id="modes"></div>
+  <p class="small">Cada modo propone un reto diferente. Consigue XP acertando.</p>
 </section>
 
-<div class="card">
-  <strong>🎯 Misión de hoy</strong>
-  <p id="mission" class="sub">Responde correctamente a 3 preguntas.</p>
-  <div class="tiny">Tu experiencia se guarda en este navegador.</div>
-</div>
+<section class="panel">
+  <h2>🧭 Reto actual</h2>
+  <div id="modeTitle">Descubre el mundo</div>
+  <div id="question">Pulsa «Nueva pregunta» para comenzar.</div>
+  <div id="answers"></div>
+  <div id="feedback" role="status" aria-live="polite"></div>
+  <button class="primary" id="next">Nueva pregunta →</button>
+</section>
 
-<h2 class="section-title">Elige tu desafío</h2>
-<section id="games" class="grid"></section>
-
-<section id="play" class="play hidden">
-  <div class="playhead">
-    <div><div class="sub" id="gameLabel">DESAFÍO</div><h2 id="gameTitle">Pregunta</h2></div>
-    <button id="back" class="secondary">← Volver</button>
-  </div>
-  <div class="progress"><div id="bar"></div></div>
-  <div class="sub" id="round"></div>
-  <div class="question" id="question"></div>
-  <div class="extra" id="extra"></div>
+<section class="panel">
+  <h2>🗺️ Explora el mapa</h2>
+  <p class="small">Acércate, aléjate y pulsa el mapa para ver las coordenadas.</p>
   <div id="map"></div>
-  <div id="answers" class="answers"></div>
-  <div id="feedback" class="feedback" aria-live="polite"></div>
-  <div class="actions">
-    <button id="hint" class="secondary">💡 Pista</button>
-    <button id="next" class="hidden">Siguiente →</button>
-  </div>
+  <p id="mapInfo">Selecciona un punto del mapa.</p>
 </section>
 
-<section class="card" style="margin-top:22px">
-  <h2>🏆 Rangos de explorador</h2>
-  <ul class="list">
-    <li>Novato: 0 XP</li>
-    <li>Explorador: 300 XP</li>
-    <li>Cartógrafo: 800 XP</li>
-    <li>Maestro del Atlas: 1600 XP</li>
-  </ul>
+<section class="panel">
+  <h2>⚔️ Duelo online</h2>
+  <p>Juega contra otra persona con un código de sala. Esta sección es la interfaz inicial; todavía no crea partidas online reales.</p>
+  <label for="playerName">Tu nombre de jugador</label>
+  <input id="playerName" maxlength="18" placeholder="Explorador123">
+  <button id="createRoom" class="primary">Crear sala</button>
+  <label for="roomCode">Código de sala</label>
+  <input id="roomCode" maxlength="8" placeholder="Ej. ATLAS123">
+  <button id="joinRoom">Preparar entrada a sala</button>
+  <p id="duelInfo" role="status" aria-live="polite"></p>
+  <p class="small">Para jugar de verdad con otra persona, hay que conectar Firebase Authentication y Realtime Database con reglas seguras.</p>
 </section>
-
-<footer class="footer">
-Atlas Quest · Juego educativo gratuito. Los mapas necesitan conexión a Internet y utilizan OpenStreetMap. Esta versión es una base de práctica con datos de ejemplo.
-</footer>
-</div>
+</main>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const games=[
-{id:"hints",name:"País por pistas",emoji:"🕵️",desc:"Adivina el país usando pistas progresivas.",map:false},
-{id:"route",name:"Conecta países por fronteras",emoji:"🧩",desc:"Practica las fronteras terrestres.",map:true},
-{id:"landmark",name:"¿Dónde está este lugar?",emoji:"🏛️",desc:"Descubre lugares famosos del mundo.",map:true},
-{id:"survival",name:"Sobrevive en el mapa",emoji:"❤️",desc:"Tienes tres vidas para acertar.",map:true},
-{id:"chain",name:"Capitales en cadena",emoji:"🔤",desc:"Aprende las capitales del mundo.",map:false},
-{id:"neighbors",name:"¿Quiénes son mis vecinos?",emoji:"🌐",desc:"Encuentra países fronterizos.",map:true},
-{id:"shape",name:"País por su silueta",emoji:"🗺️",desc:"Reconoce países a partir de pistas.",map:true},
-{id:"find",name:"Encuentra el país",emoji:"📍",desc:"Pulsa en el mapa para encontrar lugares.",map:true},
-{id:"coordinates",name:"Coordenadas secretas",emoji:"🧭",desc:"Localiza lugares usando coordenadas.",map:true},
-{id:"flags",name:"Quiz de banderas",emoji:"🚩",desc:"Relaciona banderas con países.",map:false},
-{id:"complete",name:"Completa el mapa",emoji:"🧱",desc:"Practica dónde se encuentran los países.",map:true}
+const countries = [
+ {name:"España",capital:"Madrid",continent:"Europa",flag:"🇪🇸",lat:40.4,lon:-3.7},
+ {name:"Francia",capital:"París",continent:"Europa",flag:"🇫🇷",lat:46.2,lon:2.2},
+ {name:"Italia",capital:"Roma",continent:"Europa",flag:"🇮🇹",lat:41.9,lon:12.5},
+ {name:"Alemania",capital:"Berlín",continent:"Europa",flag:"🇩🇪",lat:51.2,lon:10.4},
+ {name:"Portugal",capital:"Lisboa",continent:"Europa",flag:"🇵🇹",lat:39.4,lon:-8.2},
+ {name:"Japón",capital:"Tokio",continent:"Asia",flag:"🇯🇵",lat:36.2,lon:138.3},
+ {name:"China",capital:"Pekín",continent:"Asia",flag:"🇨🇳",lat:35.9,lon:104.2},
+ {name:"India",capital:"Nueva Delhi",continent:"Asia",flag:"🇮🇳",lat:20.6,lon:78.9},
+ {name:"Egipto",capital:"El Cairo",continent:"África",flag:"🇪🇬",lat:26.8,lon:30.8},
+ {name:"Kenia",capital:"Nairobi",continent:"África",flag:"🇰🇪",lat:-0.1,lon:37.9},
+ {name:"Marruecos",capital:"Rabat",continent:"África",flag:"🇲🇦",lat:31.8,lon:-7.1},
+ {name:"Brasil",capital:"Brasilia",continent:"América",flag:"🇧🇷",lat:-10.8,lon:-52.9},
+ {name:"México",capital:"Ciudad de México",continent:"América",flag:"🇲🇽",lat:23.6,lon:-102.5},
+ {name:"Canadá",capital:"Ottawa",continent:"América",flag:"🇨🇦",lat:56.1,lon:-106.3},
+ {name:"Argentina",capital:"Buenos Aires",continent:"América",flag:"🇦🇷",lat:-38.4,lon:-63.6},
+ {name:"Australia",capital:"Canberra",continent:"Oceanía",flag:"🇦🇺",lat:-25.3,lon:133.8},
+ {name:"Nueva Zelanda",capital:"Wellington",continent:"Oceanía",flag:"🇳🇿",lat:-40.9,lon:174.9},
+ {name:"Grecia",capital:"Atenas",continent:"Europa",flag:"🇬🇷",lat:39.1,lon:21.8},
+ {name:"Noruega",capital:"Oslo",continent:"Europa",flag:"🇳🇴",lat:60.5,lon:8.5},
+ {name:"Corea del Sur",capital:"Seúl",continent:"Asia",flag:"🇰🇷",lat:36.5,lon:127.9},
+ {name:"Estados Unidos",capital:"Washington D. C.",continent:"América",flag:"🇺🇸",lat:39.8,lon:-98.6},
+ {name:"Perú",capital:"Lima",continent:"América",flag:"🇵🇪",lat:-9.2,lon:-75.0},
+ {name:"Sudáfrica",capital:"Pretoria",continent:"África",flag:"🇿🇦",lat:-30.6,lon:22.9},
+ {name:"Islandia",capital:"Reikiavik",continent:"Europa",flag:"🇮🇸",lat:64.9,lon:-19.0}
 ];
 
-const countries=[
-{name:"España",capital:"Madrid",lat:40.4,lon:-3.7,flag:"🇪🇸",continent:"Europa",clue:"Está en la península ibérica.",neighbors:["Portugal","Francia"]},
-{name:"Francia",capital:"París",lat:46.2,lon:2.2,flag:"🇫🇷",continent:"Europa",clue:"Su capital es París y tiene costa mediterránea y atlántica.",neighbors:["España","Italia","Alemania"]},
-{name:"Portugal",capital:"Lisboa",lat:39.4,lon:-8.2,flag:"🇵🇹",continent:"Europa",clue:"País atlántico situado al oeste de España.",neighbors:["España"]},
-{name:"Italia",capital:"Roma",lat:42.8,lon:12.8,flag:"🇮🇹",continent:"Europa",clue:"Tiene forma de bota y su capital es Roma.",neighbors:["Francia"]},
-{name:"Alemania",capital:"Berlín",lat:51.2,lon:10.4,flag:"🇩🇪",continent:"Europa",clue:"País de Europa central cuya capital es Berlín.",neighbors:["Francia"]},
-{name:"Japón",capital:"Tokio",lat:36.2,lon:138.3,flag:"🇯🇵",continent:"Asia",clue:"Archipiélago de Asia oriental.",neighbors:[]},
-{name:"Brasil",capital:"Brasilia",lat:-10.8,lon:-52.9,flag:"🇧🇷",continent:"América del Sur",clue:"Es el país más grande de Sudamérica.",neighbors:["Argentina"]},
-{name:"Canadá",capital:"Ottawa",lat:56.1,lon:-106.3,flag:"🇨🇦",continent:"América del Norte",clue:"País norteamericano cuya capital es Ottawa.",neighbors:[]},
-{name:"Egipto",capital:"El Cairo",lat:26.8,lon:30.8,flag:"🇪🇬",continent:"África",clue:"Aquí se encuentran las famosas pirámides de Guiza.",neighbors:[]},
-{name:"Australia",capital:"Canberra",lat:-25.3,lon:133.8,flag:"🇦🇺",continent:"Oceanía",clue:"País conocido por los canguros.",neighbors:[]},
-{name:"Argentina",capital:"Buenos Aires",lat:-38.4,lon:-63.6,flag:"🇦🇷",continent:"América del Sur",clue:"País sudamericano cuya capital es Buenos Aires.",neighbors:["Brasil"]},
-{name:"Grecia",capital:"Atenas",lat:39.1,lon:21.8,flag:"🇬🇷",continent:"Europa",clue:"País mediterráneo conocido por la antigua Atenas.",neighbors:[]},
-{name:"India",capital:"Nueva Delhi",lat:22.9,lon:79,flag:"🇮🇳",continent:"Asia",clue:"País del sur de Asia donde está el Taj Mahal.",neighbors:[]},
-{name:"Kenia",capital:"Nairobi",lat:.2,lon:37.9,flag:"🇰🇪",continent:"África",clue:"País del este de África conocido por sus sabanas.",neighbors:[]},
-{name:"México",capital:"Ciudad de México",lat:23.6,lon:-102.5,flag:"🇲🇽",continent:"América del Norte",clue:"País norteamericano de habla española.",neighbors:[]},
-{name:"Noruega",capital:"Oslo",lat:60.5,lon:8.5,flag:"🇳🇴",continent:"Europa",clue:"País escandinavo famoso por sus fiordos.",neighbors:[]}
+const gameModes = [
+ ["hints","💡 Adivina el país"],
+ ["route","🧭 Capitales"],
+ ["landmark","🏛️ Lugares del mundo"],
+ ["survival","❤️ Supervivencia"],
+ ["chain","🔗 Cadena geográfica"],
+ ["neighbors","🌐 Continentes"],
+ ["shape","🗺️ Coordenadas"],
+ ["find","📍 Encuentra el país"],
+ ["coordinates","📐 Latitud y longitud"],
+ ["flags","🚩 Banderas"],
+ ["complete","🎯 Reto mixto"]
 ];
 
-const landmarks=[
-{name:"Torre Eiffel",lat:48.8584,lon:2.2945,clue:"Monumento de hierro situado en París."},
-{name:"Pirámides de Guiza",lat:29.9792,lon:31.1342,clue:"Antiguas pirámides cerca de El Cairo."},
-{name:"Taj Mahal",lat:27.1751,lon:78.0421,clue:"Mausoleo de mármol blanco en Agra, India."},
-{name:"Estatua de la Libertad",lat:40.6892,lon:-74.0445,clue:"Monumento situado en una isla de Nueva York."},
-{name:"Ópera de Sídney",lat:-33.8568,lon:151.2153,clue:"Edificio famoso junto al puerto de Sídney."}
-];
+let mode = "hints";
+let current = null;
+let answered = false;
+let xp = Number(localStorage.getItem("atlasXp") || 0);
+let wins = Number(localStorage.getItem("atlasWins") || 0);
+let streak = 0;
+let survivalLives = 3;
+let chainLast = "";
 
-const $=id=>document.getElementById(id);
-let currentGame="hints",questions=[],index=0,score=0,answered=false,lives=3,hintStep=0,currentQuestion=null,map=null,mapMarker=null,missionCount=0;
-let xp=Number(localStorage.getItem("atlasXP")||0);
-let totalCorrect=Number(localStorage.getItem("atlasCorrect")||0);
-
+function rankFor(points){
+ if(points >= 1000) return "Maestro del mundo";
+ if(points >= 500) return "Cartógrafo";
+ if(points >= 200) return "Explorador experto";
+ if(points >= 50) return "Aventurero";
+ return "Explorador";
+}
 function updateStats(){
-$("xp").textContent=xp;
-$("rank").textContent=xp>=1600?"Maestro del Atlas":xp>=800?"Cartógrafo":xp>=300?"Explorador":"Novato";
-$("streak").textContent=totalCorrect;
-$("mission").textContent=`Responde correctamente a 3 preguntas. Progreso: ${missionCount}/3.`;
+ document.getElementById("xp").textContent = xp;
+ document.getElementById("wins").textContent = wins;
+ document.getElementById("rank").textContent = rankFor(xp);
+ localStorage.setItem("atlasXp",xp);
+ localStorage.setItem("atlasWins",wins);
 }
-function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
-function pick(a){return a[Math.floor(Math.random()*a.length)]}
-function options(correct,all){return shuffle([correct,...shuffle(all.filter(x=>x!==correct)).slice(0,3)])}
-
-function renderGames(){
-$("games").innerHTML="";
-games.forEach(g=>{
-const el=document.createElement("article");el.className="card game";
-const emoji=document.createElement("div");emoji.className="emoji";emoji.textContent=g.emoji;
-const h=document.createElement("h3");h.textContent=g.name;
-const p=document.createElement("p");p.textContent=g.desc;
-const b=document.createElement("button");b.textContent="Jugar →";b.addEventListener("click",()=>startGame(g.id));
-el.append(emoji,h,p,b);$("games").appendChild(el);
+function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
+function pickCountry(){return countries[Math.floor(Math.random()*countries.length)]}
+function chooseMode(id){
+ mode=id;
+ document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===id));
+ document.getElementById("modeTitle").textContent=gameModes.find(m=>m[0]===id)[1];
+ document.getElementById("feedback").textContent="";
+ newQuestion();
+}
+const modesEl=document.getElementById("modes");
+gameModes.forEach(([id,label])=>{
+ const b=document.createElement("button");
+ b.textContent=label;b.dataset.mode=id;
+ b.onclick=()=>chooseMode(id);
+ modesEl.appendChild(b);
 });
-}
-renderGames();updateStats();
 
-function makeQuestion(){
-const pool=shuffle(countries);let c=pool[0],correct,opts,text,extra="",hint="";
-switch(currentGame){
-case "hints":
-correct=c.name;text="¿Qué país soy?";opts=options(correct,countries.map(x=>x.name));
-extra="Pista 1: "+c.clue;hint="Estoy en "+c.continent+".";break;
-case "route":
-c=pool.find(x=>x.neighbors.some(n=>countries.some(y=>y.name===n)))||countries[0];
-correct=pick(c.neighbors.filter(n=>countries.some(y=>y.name===n)));
-text=`Desde ${c.name}, ¿qué país de las opciones tiene frontera terrestre con él?`;
-opts=options(correct,countries.map(x=>x.name));extra="Elige un vecino terrestre.";hint="Piensa en los países cercanos.";break;
-case "landmark":{
-const l=pick(landmarks);c={...l,name:l.name};correct=l.name;text="¿Qué lugar famoso describe la pista?";
-extra=l.clue;opts=options(correct,landmarks.map(x=>x.name));hint=`Está cerca de ${l.lat.toFixed(2)}, ${l.lon.toFixed(2)}.`;break;
-}
-case "survival":case "find":case "complete":
-c=pool[0];correct=c.name;
-text=currentGame==="survival"?"¡Ronda de supervivencia! ¿Qué país es?":currentGame==="complete"?"¿Qué país se encuentra cerca de este punto del mapa?":"Encuentra este país en el mapa: "+c.name;
-opts=options(correct,countries.map(x=>x.name));hint="Observa el continente y la ubicación aproximada.";
-extra=currentGame==="survival"?c.clue:"Pulsa aproximadamente en el país o selecciona su nombre.";break;
-case "chain":
-c=pick(countries);correct=c.capital;text=`¿Cuál es la capital de ${c.name}?`;
-opts=options(correct,countries.map(x=>x.capital));hint="Piensa en la capital oficial.";break;
-case "neighbors":
-c=pool.find(x=>x.neighbors.some(n=>countries.some(y=>y.name===n)))||countries[0];
-correct=pick(c.neighbors.filter(n=>countries.some(y=>y.name===n)));
-text=`¿Cuál de estos países comparte frontera terrestre con ${c.name}?`;
-opts=options(correct,countries.map(x=>x.name));hint="No cuentes países separados por mar.";break;
-case "shape":
-correct=c.name;text="¿Qué país corresponde a esta pista geográfica?";
-extra=c.clue+" La silueta exacta todavía no está implementada.";
-opts=options(correct,countries.map(x=>x.name));hint="Usa la pista y la región.";break;
-case "coordinates":{
-const l=pick(landmarks);c={...l,name:l.name};correct=l.name;text="¿Qué lugar se encuentra cerca de estas coordenadas?";
-extra=`Latitud ${l.lat.toFixed(4)}°, longitud ${l.lon.toFixed(4)}°`;
-opts=options(correct,landmarks.map(x=>x.name));hint="Busca el lugar indicado por las coordenadas.";break;
-}
-case "flags":
-correct=c.name;text=`¿A qué país pertenece esta bandera? ${c.flag}`;
-opts=options(correct,countries.map(x=>x.name));hint="Observa los colores y el diseño.";break;
-}
-return {text,answer:correct,options:opts,extra,hint,place:c};
-}
+function newQuestion(){
+ answered=false;
+ document.getElementById("feedback").textContent="";
+ const answerBox=document.getElementById("answers");
+ answerBox.replaceChildren();
+ current=pickCountry();
+ let question="",correct=current.name,options=[];
 
-function startGame(id){
-currentGame=id;index=0;score=0;lives=3;
-questions=Array.from({length:5},()=>makeQuestion());
-$("play").classList.remove("hidden");
-$("gameTitle").textContent=games.find(g=>g.id===id).name;
-$("gameLabel").textContent="DESAFÍO DE ATLAS QUEST";
-$("hint").classList.remove("hidden");
-$("play").scrollIntoView({behavior:"smooth",block:"start"});
-showQuestion();
+ if(mode==="route"){
+  question="¿Cuál es la capital de "+current.name+"?";
+  correct=current.capital;
+  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.capital)]);
+ }else if(mode==="flags"){
+  question="¿A qué país pertenece esta bandera? "+current.flag;
+  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
+ }else if(mode==="neighbors"){
+  question="¿En qué región del mundo se encuentra "+current.name+"?";
+  correct=current.continent;
+  options=shuffle([correct,...shuffle(["Europa","Asia","África","América","Oceanía"].filter(c=>c!==correct)).slice(0,3)]);
+ }else if(mode==="coordinates"){
+  question="¿Qué país está aproximadamente en "+current.lat.toFixed(1)+"°, "+current.lon.toFixed(1)+"°?";
+  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
+ }else if(mode==="shape"||mode==="find"){
+  question="Busca en el mapa el país: "+current.name;
+  correct=current.name;
+  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
+ }else if(mode==="landmark"){
+  const landmarks=[
+   ["¿En qué país está la Torre Eiffel?","Francia"],
+   ["¿En qué país está el Coliseo?","Italia"],
+   ["¿En qué país están las pirámides de Guiza?","Egipto"],
+   ["¿En qué país está el monte Fuji?","Japón"],
+   ["¿En qué país está el Cristo Redentor?","Brasil"]
+  ];
+  const l=landmarks[Math.floor(Math.random()*landmarks.length)];
+  question=l[0];correct=l[1];
+  options=shuffle([correct,...shuffle(countries.filter(c=>c.name!==correct)).slice(0,3).map(c=>c.name)]);
+ }else if(mode==="chain"){
+  if(!chainLast) chainLast=pickCountry().name;
+  question="Cadena geográfica: elige un país distinto después de "+chainLast+".";
+  correct=current.name;
+  options=shuffle([correct,...shuffle(countries.filter(c=>c.name!==chainLast&&c!==current)).slice(0,3).map(c=>c.name)]);
+ }else{
+  question= mode==="survival" ? "❤️ Supervivencia ("+survivalLives+" vidas): ¿qué país es este?" :
+   mode==="complete" ? "🎯 Reto mixto: ¿cuál es la capital de "+current.name+"?" :
+   "💡 Pista: elige el país cuya capital es "+current.capital+".";
+  if(mode==="complete"){correct=current.capital;options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.capital)])}
+  else if(mode==="hints"||mode==="survival") options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
+ }
+ document.getElementById("question").textContent=question;
+ options.forEach(option=>{
+  const b=document.createElement("button");
+  b.textContent=option;
+  b.onclick=()=>answer(option,correct,b);
+  answerBox.appendChild(b);
+ });
+ if(mode==="find"||mode==="shape"){
+  map.setView([current.lat,current.lon],3);
+  document.getElementById("mapInfo").textContent="Pulsa cerca de "+current.name+" en el mapa para practicar.";
+ }
 }
-function showQuestion(){
-if(index>=questions.length||(currentGame==="survival"&&lives<=0)){finish();return}
-answered=false;hintStep=0;currentQuestion=questions[index];
-$("round").textContent=`Pregunta ${index+1} de ${questions.length} · ${score} puntos`;
-$("bar").style.width=(index/questions.length*100)+"%";
-$("question").textContent=currentQuestion.text;
-$("extra").textContent=currentQuestion.extra||"";
-$("feedback").textContent=currentGame==="survival"?`❤️ Vidas: ${lives}`:"";
-$("next").classList.add("hidden");$("answers").innerHTML="";
-currentQuestion.options.forEach(option=>{
-const b=document.createElement("button");b.type="button";b.textContent=option;
-b.addEventListener("click",()=>choose(b,option));$("answers").appendChild(b);
-});
-if(games.find(g=>g.id===currentGame).map)showAtlasMap(currentQuestion);else hideAtlasMap();
+function answer(option,correct,button){
+ if(answered)return;
+ answered=true;
+ const ok=option===correct;
+ document.querySelectorAll("#answers button").forEach(b=>{b.disabled=true;if(b.textContent===correct)b.classList.add("active")});
+ if(ok){
+  const earned=10+Math.min(streak,5)*2;
+  xp+=earned;wins++;streak++;
+  if(mode==="chain")chainLast=current.name;
+  document.getElementById("feedback").textContent="¡Correcto! +"+earned+" XP ⭐";
+ }else{
+  streak=0;
+  if(mode==="survival"){survivalLives--;if(survivalLives<=0)survivalLives=3}
+  document.getElementById("feedback").textContent="La respuesta era: "+correct+". ¡Sigue practicando!";
+ }
+ updateStats();
 }
+document.getElementById("next").onclick=newQuestion;
 
-function showAtlasMap(q){
-$("map").style.display="block";
-if(!window.L){$("map").textContent="No se pudo cargar el mapa. Comprueba tu conexión.";return}
-if(map){map.remove();map=null}
-map=L.map("map").setView([20,0],2);
+const map=L.map("map").setView([20,0],2);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-maxZoom:18,attribution:"&copy; OpenStreetMap contributors"
+ maxZoom:18,attribution:'&copy; OpenStreetMap contributors'
 }).addTo(map);
-mapMarker=null;
+countries.forEach(c=>{
+ L.marker([c.lat,c.lon]).addTo(map)
+ .bindPopup("<b>"+c.flag+" "+c.name+"</b><br>Capital: "+c.capital+"<br>Región: "+c.continent);
+});
 map.on("click",e=>{
-if(answered)return;
-if(mapMarker)map.removeLayer(mapMarker);
-mapMarker=L.marker(e.latlng).addTo(map)
-.bindPopup(`Coordenadas: ${e.latlng.lat.toFixed(2)}, ${e.latlng.lng.toFixed(2)}`).openPopup();
-const p=q.place;
-if(p&&p.lat!==undefined){
-const distance=Math.hypot(e.latlng.lat-p.lat,(e.latlng.lng-p.lon)*Math.cos(p.lat*Math.PI/180));
-if(distance<8){answerMap(true)}
-else $("feedback").textContent="Ubicación marcada. Puedes responder usando las opciones.";
-}
+ document.getElementById("mapInfo").textContent=
+ "Coordenadas seleccionadas: "+e.latlng.lat.toFixed(2)+", "+e.latlng.lng.toFixed(2);
+ if((mode==="find"||mode==="shape")&&current&&!answered){
+  const distance=map.distance(e.latlng,L.latLng(current.lat,current.lon))/1000;
+  if(distance<700){
+   answer(current.name,current.name);
+   document.getElementById("mapInfo").textContent="¡Has encontrado "+current.name+"!";
+  }else{
+   document.getElementById("mapInfo").textContent="Todavía estás lejos. Acércate más al país.";
+  }
+ }
 });
-setTimeout(()=>map.invalidateSize(),150);
-}
-function hideAtlasMap(){
-$("map").style.display="none";
-if(map){map.remove();map=null}
-}
 
-function answerMap(correct){
-if(answered)return;
-answered=true;
-if(correct){
-score+=100;xp+=20;totalCorrect++;
-$("feedback").textContent="¡Muy cerca! +100 puntos.";
-}else $("feedback").textContent="Ubicación marcada. Prueba con las respuestas.";
-document.querySelectorAll("#answers button").forEach(b=>b.disabled=true);
-$("next").textContent=index===questions.length-1?"Ver resultados →":"Siguiente →";
-$("next").classList.remove("hidden");saveProgress();updateStats();
-}
+document.getElementById("createRoom").onclick=()=>{
+ const code="ATLAS"+Math.random().toString(36).slice(2,6).toUpperCase();
+ document.getElementById("roomCode").value=code;
+ document.getElementById("duelInfo").textContent=
+ "Código de prueba: "+code+". Aún no es una sala online real.";
+};
+document.getElementById("joinRoom").onclick=()=>{
+ const code=document.getElementById("roomCode").value.trim().toUpperCase();
+ document.getElementById("duelInfo").textContent=code?
+ "Código introducido: "+code+". Para conectarte a otro jugador falta integrar Firebase.":
+ "Escribe un código de sala.";
+};
 
-function choose(btn,value){
-if(answered||!currentQuestion)return;
-answered=true;const correct=value===currentQuestion.answer;
-document.querySelectorAll("#answers button").forEach(b=>{
-b.disabled=true;
-if(b.textContent===currentQuestion.answer)b.classList.add("correct");
-});
-if(!correct)btn.classList.add("wrong");
-if(correct){
-const points=currentGame==="hints"?Math.max(40,100-hintStep*20):100;
-score+=points;xp+=20;totalCorrect++;missionCount++;
-$("feedback").textContent=`¡Correcto! +${points} puntos. Respuesta: ${currentQuestion.answer}.`;
-}else{
-$("feedback").textContent=`La respuesta correcta era ${currentQuestion.answer}.`;
-if(currentGame==="survival")lives--;
-}
-if(currentGame==="survival")$("feedback").textContent+=` ❤️ Vidas restantes: ${lives}`;
-$("next").textContent=index===questions.length-1||(currentGame==="survival"&&lives<=0)?"Ver resultados →":"Siguiente →";
-$("next").classList.remove("hidden");saveProgress();updateStats();
-}
-function saveProgress(){
-localStorage.setItem("atlasXP",xp);
-localStorage.setItem("atlasCorrect",totalCorrect);
-}
-$("hint").addEventListener("click",()=>{
-if(answered||!currentQuestion)return;
-hintStep++;
-$("extra").textContent=currentQuestion.hint||"Lee atentamente la pregunta.";
-$("feedback").textContent="Pista revelada. ¡Inténtalo!";
-});
-$("next").addEventListener("click",()=>{index++;showQuestion()});
-$("back").addEventListener("click",()=>{
-hideAtlasMap();$("play").classList.add("hidden");
-$("games").scrollIntoView({behavior:"smooth"});
-});
-function finish(){
-hideAtlasMap();$("question").textContent="¡Desafío completado!";
-$("extra").textContent=`Has conseguido ${score} puntos en esta partida.`;
-$("answers").innerHTML="";$("feedback").textContent="¡Buen trabajo, explorador!";
-$("bar").style.width="100%";$("next").textContent="Jugar otra vez";
-$("next").classList.remove("hidden");$("hint").classList.add("hidden");
 updateStats();
-}
+chooseMode("hints");
 </script>
 </body>
 </html>
