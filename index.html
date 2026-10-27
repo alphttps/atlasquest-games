@@ -2,284 +2,781 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Atlas Quest 🌍</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-:root{color-scheme:dark;--bg:#101827;--panel:#1c2940;--accent:#52e0b5;--text:#f4f7ff}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif}
-header{padding:20px;text-align:center;background:#17243a;border-bottom:1px solid #34445d}
-h1{margin:0;color:var(--accent)}
-header p{margin:6px 0 0;color:#b8c5d8}
-main{max-width:1100px;margin:auto;padding:16px}
-.panel{background:var(--panel);padding:16px;border-radius:15px;margin-bottom:16px}
-.stats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
-.stat{background:#263750;padding:8px 13px;border-radius:10px}
-.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
-button,input{font:inherit;border-radius:9px;padding:11px}
-button{border:0;background:#314662;color:white;cursor:pointer}
-button:hover{filter:brightness(1.18)}
-button.active,.primary{background:var(--accent);color:#102b2b;font-weight:700}
-input{width:100%;background:#101827;color:white;border:1px solid #50627c;margin:5px 0}
-#map{height:360px;border-radius:12px;z-index:1}
-#question{font-size:1.2rem;font-weight:700;margin:12px 0}
-#answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-#feedback{min-height:28px;margin:12px 0}
-.small{color:#bdc9dc;font-size:.9rem}
-.hidden{display:none}
-a{color:var(--accent)}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atlas Quest — Explora el mundo</title>
+  <meta name="theme-color" content="#101827">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101827;
+      --panel: #1b2638;
+      --panel2: #253249;
+      --text: #f4f7fb;
+      --muted: #b7c4d8;
+      --accent: #65e6bd;
+      --blue: #79aaff;
+      --danger: #ff7777;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, Arial, sans-serif;
+    }
+
+    header {
+      padding: 22px 16px;
+      text-align: center;
+      background: linear-gradient(135deg, #192d48, #273e5d);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 42px);
+    }
+
+    header p { color: var(--muted); }
+
+    main {
+      width: min(1100px, 94%);
+      margin: 20px auto;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #34435b;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    h2, h3 { margin-top: 0; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--panel2);
+      padding: 12px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 23px;
+      color: var(--accent);
+    }
+
+    .modes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 9px;
+    }
+
+    button, input, select {
+      font: inherit;
+      border-radius: 9px;
+      padding: 11px;
+    }
+
+    button {
+      border: 1px solid #526581;
+      background: var(--panel2);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #10231f;
+      border: 0;
+      font-weight: 750;
+    }
+
+    input, select {
+      width: 100%;
+      color: var(--text);
+      background: #101827;
+      border: 1px solid #526581;
+      margin: 5px 0 12px;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+    }
+
+    #map {
+      width: 100%;
+      height: 390px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .muted { color: var(--muted); }
+
+    .status {
+      min-height: 24px;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+    }
+
+    .hidden { display: none !important; }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 500px) {
+      .stats { grid-template-columns: 1fr; }
+      #map { height: 320px; }
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <h1>🌍 ATLAS QUEST</h1>
-  <p>Explora el mundo. Aprende jugando. Conquista el mapa.</p>
-  <div class="stats">
-    <div class="stat">⭐ XP: <span id="xp">0</span></div>
-    <div class="stat">🏅 Rango: <span id="rank">Explorador</span></div>
-    <div class="stat">🔥 Aciertos: <span id="wins">0</span></div>
-  </div>
-</header>
+  <header>
+    <h1>🌍 Atlas Quest</h1>
+    <p>Explora el mundo. Aprende jugando. ¡Conviértete en leyenda!</p>
+  </header>
 
-<main>
-<section class="panel">
-  <h2>🎮 Elige tu misión</h2>
-  <div class="modes" id="modes"></div>
-  <p class="small">Cada modo propone un reto diferente. Consigue XP acertando.</p>
-</section>
+  <main>
+    <section class="panel">
+      <h2>🏆 Tu progreso</h2>
+      <div class="stats">
+        <div class="stat">
+          <span>Experiencia</span>
+          <strong id="xp">0 XP</strong>
+        </div>
+        <div class="stat">
+          <span>Rango</span>
+          <strong id="rank">Explorador</strong>
+        </div>
+        <div class="stat">
+          <span>Respuestas correctas</span>
+          <strong id="correct">0</strong>
+        </div>
+      </div>
+    </section>
 
-<section class="panel">
-  <h2>🧭 Reto actual</h2>
-  <div id="modeTitle">Descubre el mundo</div>
-  <div id="question">Pulsa «Nueva pregunta» para comenzar.</div>
-  <div id="answers"></div>
-  <div id="feedback" role="status" aria-live="polite"></div>
-  <button class="primary" id="next">Nueva pregunta →</button>
-</section>
+    <section class="panel">
+      <h2>🧭 Elige tu modo</h2>
+      <div class="modes" id="modeButtons">
+        <button data-mode="capital">🏙️ Capitales</button>
+        <button data-mode="flag">🏳️ Banderas</button>
+        <button data-mode="continent">🌎 Continentes</button>
+        <button data-mode="coordinates">📍 Coordenadas</button>
+        <button data-mode="neighbor">🗺️ Países vecinos</button>
+        <button data-mode="landmark">🏛️ Monumentos</button>
+        <button data-mode="truefalse">✅ Verdadero o falso</button>
+        <button data-mode="survival">❤️ Supervivencia</button>
+        <button data-mode="chain">🔗 Cadena geográfica</button>
+        <button data-mode="shape">🔎 Descubre el país</button>
+        <button data-mode="complete">🎯 Reto completo</button>
+      </div>
+      <p id="modeDescription" class="muted">
+        Selecciona un modo para empezar.
+      </p>
+    </section>
 
-<section class="panel">
-  <h2>🗺️ Explora el mapa</h2>
-  <p class="small">Acércate, aléjate y pulsa el mapa para ver las coordenadas.</p>
-  <div id="map"></div>
-  <p id="mapInfo">Selecciona un punto del mapa.</p>
-</section>
+    <section class="panel">
+      <h2>🌐 Mapa interactivo</h2>
+      <p id="question">Elige un modo para recibir una pregunta.</p>
+      <div id="answers" class="answer-grid"></div>
+      <p id="feedback" class="status" aria-live="polite"></p>
+      <div id="map"></div>
+      <p class="muted">
+        En los modos de mapa, pulsa sobre la ubicación que creas correcta.
+      </p>
+      <button id="nextQuestion" class="primary">Siguiente pregunta</button>
+    </section>
 
-<section class="panel">
-  <h2>⚔️ Duelo online</h2>
-  <p>Juega contra otra persona con un código de sala. Esta sección es la interfaz inicial; todavía no crea partidas online reales.</p>
-  <label for="playerName">Tu nombre de jugador</label>
-  <input id="playerName" maxlength="18" placeholder="Explorador123">
-  <button id="createRoom" class="primary">Crear sala</button>
-  <label for="roomCode">Código de sala</label>
-  <input id="roomCode" maxlength="8" placeholder="Ej. ATLAS123">
-  <button id="joinRoom">Preparar entrada a sala</button>
-  <p id="duelInfo" role="status" aria-live="polite"></p>
-  <p class="small">Para jugar de verdad con otra persona, hay que conectar Firebase Authentication y Realtime Database con reglas seguras.</p>
-</section>
-</main>
+    <section class="panel" id="duelPanel">
+      <h2>⚔️ Duelo online</h2>
+      <p class="muted">
+        Juega cinco preguntas contra otra persona. Comparte el código de sala.
+      </p>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-const countries = [
- {name:"España",capital:"Madrid",continent:"Europa",flag:"🇪🇸",lat:40.4,lon:-3.7},
- {name:"Francia",capital:"París",continent:"Europa",flag:"🇫🇷",lat:46.2,lon:2.2},
- {name:"Italia",capital:"Roma",continent:"Europa",flag:"🇮🇹",lat:41.9,lon:12.5},
- {name:"Alemania",capital:"Berlín",continent:"Europa",flag:"🇩🇪",lat:51.2,lon:10.4},
- {name:"Portugal",capital:"Lisboa",continent:"Europa",flag:"🇵🇹",lat:39.4,lon:-8.2},
- {name:"Japón",capital:"Tokio",continent:"Asia",flag:"🇯🇵",lat:36.2,lon:138.3},
- {name:"China",capital:"Pekín",continent:"Asia",flag:"🇨🇳",lat:35.9,lon:104.2},
- {name:"India",capital:"Nueva Delhi",continent:"Asia",flag:"🇮🇳",lat:20.6,lon:78.9},
- {name:"Egipto",capital:"El Cairo",continent:"África",flag:"🇪🇬",lat:26.8,lon:30.8},
- {name:"Kenia",capital:"Nairobi",continent:"África",flag:"🇰🇪",lat:-0.1,lon:37.9},
- {name:"Marruecos",capital:"Rabat",continent:"África",flag:"🇲🇦",lat:31.8,lon:-7.1},
- {name:"Brasil",capital:"Brasilia",continent:"América",flag:"🇧🇷",lat:-10.8,lon:-52.9},
- {name:"México",capital:"Ciudad de México",continent:"América",flag:"🇲🇽",lat:23.6,lon:-102.5},
- {name:"Canadá",capital:"Ottawa",continent:"América",flag:"🇨🇦",lat:56.1,lon:-106.3},
- {name:"Argentina",capital:"Buenos Aires",continent:"América",flag:"🇦🇷",lat:-38.4,lon:-63.6},
- {name:"Australia",capital:"Canberra",continent:"Oceanía",flag:"🇦🇺",lat:-25.3,lon:133.8},
- {name:"Nueva Zelanda",capital:"Wellington",continent:"Oceanía",flag:"🇳🇿",lat:-40.9,lon:174.9},
- {name:"Grecia",capital:"Atenas",continent:"Europa",flag:"🇬🇷",lat:39.1,lon:21.8},
- {name:"Noruega",capital:"Oslo",continent:"Europa",flag:"🇳🇴",lat:60.5,lon:8.5},
- {name:"Corea del Sur",capital:"Seúl",continent:"Asia",flag:"🇰🇷",lat:36.5,lon:127.9},
- {name:"Estados Unidos",capital:"Washington D. C.",continent:"América",flag:"🇺🇸",lat:39.8,lon:-98.6},
- {name:"Perú",capital:"Lima",continent:"América",flag:"🇵🇪",lat:-9.2,lon:-75.0},
- {name:"Sudáfrica",capital:"Pretoria",continent:"África",flag:"🇿🇦",lat:-30.6,lon:22.9},
- {name:"Islandia",capital:"Reikiavik",continent:"Europa",flag:"🇮🇸",lat:64.9,lon:-19.0}
-];
+      <label for="duelName">Tu nombre</label>
+      <input id="duelName" maxlength="18" placeholder="Explorador123">
 
-const gameModes = [
- ["hints","💡 Adivina el país"],
- ["route","🧭 Capitales"],
- ["landmark","🏛️ Lugares del mundo"],
- ["survival","❤️ Supervivencia"],
- ["chain","🔗 Cadena geográfica"],
- ["neighbors","🌐 Continentes"],
- ["shape","🗺️ Coordenadas"],
- ["find","📍 Encuentra el país"],
- ["coordinates","📐 Latitud y longitud"],
- ["flags","🚩 Banderas"],
- ["complete","🎯 Reto mixto"]
-];
+      <button id="duelCreate" class="primary">Crear sala</button>
 
-let mode = "hints";
-let current = null;
-let answered = false;
-let xp = Number(localStorage.getItem("atlasXp") || 0);
-let wins = Number(localStorage.getItem("atlasWins") || 0);
-let streak = 0;
-let survivalLives = 3;
-let chainLast = "";
+      <label for="duelCode">Código de la sala</label>
+      <input id="duelCode" maxlength="6" placeholder="ABC234">
 
-function rankFor(points){
- if(points >= 1000) return "Maestro del mundo";
- if(points >= 500) return "Cartógrafo";
- if(points >= 200) return "Explorador experto";
- if(points >= 50) return "Aventurero";
- return "Explorador";
-}
-function updateStats(){
- document.getElementById("xp").textContent = xp;
- document.getElementById("wins").textContent = wins;
- document.getElementById("rank").textContent = rankFor(xp);
- localStorage.setItem("atlasXp",xp);
- localStorage.setItem("atlasWins",wins);
-}
-function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
-function pickCountry(){return countries[Math.floor(Math.random()*countries.length)]}
-function chooseMode(id){
- mode=id;
- document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===id));
- document.getElementById("modeTitle").textContent=gameModes.find(m=>m[0]===id)[1];
- document.getElementById("feedback").textContent="";
- newQuestion();
-}
-const modesEl=document.getElementById("modes");
-gameModes.forEach(([id,label])=>{
- const b=document.createElement("button");
- b.textContent=label;b.dataset.mode=id;
- b.onclick=()=>chooseMode(id);
- modesEl.appendChild(b);
-});
+      <button id="duelJoin">Unirse a una sala</button>
+      <p id="duelStatus" class="status" aria-live="polite">
+        Preparando conexión...
+      </p>
 
-function newQuestion(){
- answered=false;
- document.getElementById("feedback").textContent="";
- const answerBox=document.getElementById("answers");
- answerBox.replaceChildren();
- current=pickCountry();
- let question="",correct=current.name,options=[];
+      <div id="duelGame" class="hidden">
+        <h3 id="duelRound">Pregunta 1 de 5</h3>
+        <p id="duelQuestion"></p>
+        <div id="duelAnswers" class="answer-grid"></div>
+        <p id="duelFeedback" class="status" aria-live="polite"></p>
+        <h3>Marcador</h3>
+        <div id="duelScores"></div>
+      </div>
+    </section>
+  </main>
 
- if(mode==="route"){
-  question="¿Cuál es la capital de "+current.name+"?";
-  correct=current.capital;
-  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.capital)]);
- }else if(mode==="flags"){
-  question="¿A qué país pertenece esta bandera? "+current.flag;
-  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
- }else if(mode==="neighbors"){
-  question="¿En qué región del mundo se encuentra "+current.name+"?";
-  correct=current.continent;
-  options=shuffle([correct,...shuffle(["Europa","Asia","África","América","Oceanía"].filter(c=>c!==correct)).slice(0,3)]);
- }else if(mode==="coordinates"){
-  question="¿Qué país está aproximadamente en "+current.lat.toFixed(1)+"°, "+current.lon.toFixed(1)+"°?";
-  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
- }else if(mode==="shape"||mode==="find"){
-  question="Busca en el mapa el país: "+current.name;
-  correct=current.name;
-  options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
- }else if(mode==="landmark"){
-  const landmarks=[
-   ["¿En qué país está la Torre Eiffel?","Francia"],
-   ["¿En qué país está el Coliseo?","Italia"],
-   ["¿En qué país están las pirámides de Guiza?","Egipto"],
-   ["¿En qué país está el monte Fuji?","Japón"],
-   ["¿En qué país está el Cristo Redentor?","Brasil"]
-  ];
-  const l=landmarks[Math.floor(Math.random()*landmarks.length)];
-  question=l[0];correct=l[1];
-  options=shuffle([correct,...shuffle(countries.filter(c=>c.name!==correct)).slice(0,3).map(c=>c.name)]);
- }else if(mode==="chain"){
-  if(!chainLast) chainLast=pickCountry().name;
-  question="Cadena geográfica: elige un país distinto después de "+chainLast+".";
-  correct=current.name;
-  options=shuffle([correct,...shuffle(countries.filter(c=>c.name!==chainLast&&c!==current)).slice(0,3).map(c=>c.name)]);
- }else{
-  question= mode==="survival" ? "❤️ Supervivencia ("+survivalLives+" vidas): ¿qué país es este?" :
-   mode==="complete" ? "🎯 Reto mixto: ¿cuál es la capital de "+current.name+"?" :
-   "💡 Pista: elige el país cuya capital es "+current.capital+".";
-  if(mode==="complete"){correct=current.capital;options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.capital)])}
-  else if(mode==="hints"||mode==="survival") options=shuffle([correct,...shuffle(countries.filter(c=>c!==current)).slice(0,3).map(c=>c.name)]);
- }
- document.getElementById("question").textContent=question;
- options.forEach(option=>{
-  const b=document.createElement("button");
-  b.textContent=option;
-  b.onclick=()=>answer(option,correct,b);
-  answerBox.appendChild(b);
- });
- if(mode==="find"||mode==="shape"){
-  map.setView([current.lat,current.lon],3);
-  document.getElementById("mapInfo").textContent="Pulsa cerca de "+current.name+" en el mapa para practicar.";
- }
-}
-function answer(option,correct,button){
- if(answered)return;
- answered=true;
- const ok=option===correct;
- document.querySelectorAll("#answers button").forEach(b=>{b.disabled=true;if(b.textContent===correct)b.classList.add("active")});
- if(ok){
-  const earned=10+Math.min(streak,5)*2;
-  xp+=earned;wins++;streak++;
-  if(mode==="chain")chainLast=current.name;
-  document.getElementById("feedback").textContent="¡Correcto! +"+earned+" XP ⭐";
- }else{
-  streak=0;
-  if(mode==="survival"){survivalLives--;if(survivalLives<=0)survivalLives=3}
-  document.getElementById("feedback").textContent="La respuesta era: "+correct+". ¡Sigue practicando!";
- }
- updateStats();
-}
-document.getElementById("next").onclick=newQuestion;
+  <footer>Atlas Quest · Aprende geografía explorando 🌍</footer>
 
-const map=L.map("map").setView([20,0],2);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
- maxZoom:18,attribution:'&copy; OpenStreetMap contributors'
-}).addTo(map);
-countries.forEach(c=>{
- L.marker([c.lat,c.lon]).addTo(map)
- .bindPopup("<b>"+c.flag+" "+c.name+"</b><br>Capital: "+c.capital+"<br>Región: "+c.continent);
-});
-map.on("click",e=>{
- document.getElementById("mapInfo").textContent=
- "Coordenadas seleccionadas: "+e.latlng.lat.toFixed(2)+", "+e.latlng.lng.toFixed(2);
- if((mode==="find"||mode==="shape")&&current&&!answered){
-  const distance=map.distance(e.latlng,L.latLng(current.lat,current.lon))/1000;
-  if(distance<700){
-   answer(current.name,current.name);
-   document.getElementById("mapInfo").textContent="¡Has encontrado "+current.name+"!";
-  }else{
-   document.getElementById("mapInfo").textContent="Todavía estás lejos. Acércate más al país.";
-  }
- }
-});
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 
-document.getElementById("createRoom").onclick=()=>{
- const code="ATLAS"+Math.random().toString(36).slice(2,6).toUpperCase();
- document.getElementById("roomCode").value=code;
- document.getElementById("duelInfo").textContent=
- "Código de prueba: "+code+". Aún no es una sala online real.";
-};
-document.getElementById("joinRoom").onclick=()=>{
- const code=document.getElementById("roomCode").value.trim().toUpperCase();
- document.getElementById("duelInfo").textContent=code?
- "Código introducido: "+code+". Para conectarte a otro jugador falta integrar Firebase.":
- "Escribe un código de sala.";
-};
+  <script>
+    "use strict";
 
-updateStats();
-chooseMode("hints");
-</script>
+    // 1. Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC41Q3nPZLjwVcx2mVdjxOwVFmZcic4",
+      authDomain: "atlas-quest-19eb8.firebaseapp.com",
+      databaseURL: "https://atlas-quest-19eb8-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "atlas-quest-19eb8",
+      storageBucket: "atlas-quest-19eb8.firebasestorage.app",
+      messagingSenderId: "10484287124",
+      appId: "1:10484287124:web:c970dd2b562a2643bf1681"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const $ = id => document.getElementById(id);
+
+    // 2. Datos geográficos
+    const countries = [
+      {name:"España",capital:"Madrid",continent:"Europa",flag:"🇪🇸",lat:40.42,lon:-3.70},
+      {name:"Francia",capital:"París",continent:"Europa",flag:"🇫🇷",lat:48.86,lon:2.35},
+      {name:"Italia",capital:"Roma",continent:"Europa",flag:"🇮🇹",lat:41.90,lon:12.50},
+      {name:"Alemania",capital:"Berlín",continent:"Europa",flag:"🇩🇪",lat:52.52,lon:13.40},
+      {name:"Portugal",capital:"Lisboa",continent:"Europa",flag:"🇵🇹",lat:38.72,lon:-9.14},
+      {name:"Reino Unido",capital:"Londres",continent:"Europa",flag:"🇬🇧",lat:51.51,lon:-0.13},
+      {name:"Noruega",capital:"Oslo",continent:"Europa",flag:"🇳🇴",lat:59.91,lon:10.75},
+      {name:"Grecia",capital:"Atenas",continent:"Europa",flag:"🇬🇷",lat:37.98,lon:23.73},
+      {name:"Japón",capital:"Tokio",continent:"Asia",flag:"🇯🇵",lat:35.68,lon:139.69},
+      {name:"China",capital:"Pekín",continent:"Asia",flag:"🇨🇳",lat:39.90,lon:116.40},
+      {name:"India",capital:"Nueva Delhi",continent:"Asia",flag:"🇮🇳",lat:28.61,lon:77.21},
+      {name:"Corea del Sur",capital:"Seúl",continent:"Asia",flag:"🇰🇷",lat:37.57,lon:126.98},
+      {name:"Egipto",capital:"El Cairo",continent:"África",flag:"🇪🇬",lat:30.04,lon:31.24},
+      {name:"Kenia",capital:"Nairobi",continent:"África",flag:"🇰🇪",lat:-1.29,lon:36.82},
+      {name:"Marruecos",capital:"Rabat",continent:"África",flag:"🇲🇦",lat:34.02,lon:-6.84},
+      {name:"Nigeria",capital:"Abuya",continent:"África",flag:"🇳🇬",lat:9.06,lon:7.49},
+      {name:"Estados Unidos",capital:"Washington D. C.",continent:"América del Norte",flag:"🇺🇸",lat:38.90,lon:-77.04},
+      {name:"Canadá",capital:"Ottawa",continent:"América del Norte",flag:"🇨🇦",lat:45.42,lon:-75.70},
+      {name:"México",capital:"Ciudad de México",continent:"América del Norte",flag:"🇲🇽",lat:19.43,lon:-99.13},
+      {name:"Brasil",capital:"Brasilia",continent:"América del Sur",flag:"🇧🇷",lat:-15.79,lon:-47.88},
+      {name:"Argentina",capital:"Buenos Aires",continent:"América del Sur",flag:"🇦🇷",lat:-34.60,lon:-58.38},
+      {name:"Chile",capital:"Santiago",continent:"América del Sur",flag:"🇨🇱",lat:-33.45,lon:-70.67},
+      {name:"Australia",capital:"Canberra",continent:"Oceanía",flag:"🇦🇺",lat:-35.28,lon:149.13},
+      {name:"Nueva Zelanda",capital:"Wellington",continent:"Oceanía",flag:"🇳🇿",lat:-41.29,lon:174.78}
+    ];
+
+    const landmarks = [
+      {name:"Torre Eiffel",country:"Francia"},
+      {name:"Coliseo",country:"Italia"},
+      {name:"Gran Muralla",country:"China"},
+      {name:"Pirámides de Guiza",country:"Egipto"},
+      {name:"Estatua de la Libertad",country:"Estados Unidos"}
+    ];
+
+    // 3. Progreso local
+    let xp = Number(localStorage.getItem("aq_xp") || 0);
+    let correct = Number(localStorage.getItem("aq_correct") || 0);
+    let currentMode = "capital";
+    let currentQuestion = null;
+    let answered = false;
+    let survivalLives = 3;
+    let chainLast = null;
+
+    function updateStats() {
+      $("xp").textContent = xp + " XP";
+      $("correct").textContent = correct;
+      $("rank").textContent =
+        xp >= 500 ? "Maestro" :
+        xp >= 200 ? "Cartógrafo" :
+        xp >= 50 ? "Explorador experto" : "Explorador";
+
+      localStorage.setItem("aq_xp", xp);
+      localStorage.setItem("aq_correct", correct);
+    }
+
+    // 4. Mapa
+    const map = L.map("map").setView([25, 0], 2);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 18
+    }).addTo(map);
+
+    let markerLayer = L.layerGroup().addTo(map);
+
+    function clearMarkers() {
+      markerLayer.clearLayers();
+    }
+
+    function showTarget(country) {
+      clearMarkers();
+      map.setView([country.lat, country.lon], 3);
+      L.marker([country.lat, country.lon])
+        .addTo(markerLayer)
+        .bindPopup(country.name)
+        .openPopup();
+    }
+
+    map.on("click", event => {
+      if (!currentQuestion || answered) return;
+      if (!["coordinates","shape","complete"].includes(currentMode)) return;
+
+      const target = currentQuestion.country;
+      const distance = map.distance(
+        event.latlng,
+        L.latLng(target.lat, target.lon)
+      );
+
+      if (distance < 350000) {
+        answerCorrect("¡Muy bien! Has encontrado " + target.name + ".");
+      } else {
+        answered = true;
+        $("feedback").textContent = "No es ahí. La respuesta era " + target.name + ".";
+      }
+    });
+
+    // 5. Preguntas
+    function shuffle(items) {
+      const result = [...items];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function chooseMode(mode) {
+      currentMode = mode;
+      if (mode === "survival") survivalLives = 3;
+      if (mode === "chain") chainLast = null;
+
+      document.querySelectorAll("#modeButtons button").forEach(button => {
+        button.classList.toggle("primary", button.dataset.mode === mode);
+      });
+
+      const descriptions = {
+        capital:"Adivina la capital del país.",
+        flag:"Identifica el país por su bandera.",
+        continent:"Descubre a qué continente pertenece.",
+        coordinates:"Encuentra el país en el mapa.",
+        neighbor:"Practica relaciones entre países.",
+        landmark:"Relaciona monumentos y países.",
+        truefalse:"Responde una pregunta de verdadero o falso.",
+        survival:"Tienes tres vidas. ¡Intenta conseguir puntos!",
+        chain:"Responde preguntas encadenadas.",
+        shape:"Encuentra el país indicado en el mapa.",
+        complete:"Combina preguntas y retos de mapa."
+      };
+
+      $("modeDescription").textContent = descriptions[mode] || "";
+      newQuestion();
+    }
+
+    function newQuestion() {
+      answered = false;
+      clearMarkers();
+      $("feedback").textContent = "";
+      $("answers").replaceChildren();
+
+      const country = countries[Math.floor(Math.random() * countries.length)];
+      currentQuestion = {country};
+
+      let text = "";
+      let options = [];
+      let correctAnswer = "";
+
+      if (currentMode === "capital") {
+        text = "¿Cuál es la capital de " + country.name + "?";
+        correctAnswer = country.capital;
+        options = [correctAnswer, ...shuffle(countries.filter(c => c !== country)).slice(0,3).map(c => c.capital)];
+      } else if (currentMode === "flag") {
+        text = "¿Qué país tiene esta bandera? " + country.flag;
+        correctAnswer = country.name;
+        options = [correctAnswer, ...shuffle(countries.filter(c => c !== country)).slice(0,3).map(c => c.name)];
+      } else if (currentMode === "continent") {
+        text = "¿En qué continente está " + country.name + "?";
+        correctAnswer = country.continent;
+        options = [correctAnswer, ...shuffle([...new Set(countries.map(c => c.continent))].filter(c => c !== correctAnswer)).slice(0,3)];
+      } else if (currentMode === "landmark") {
+        const landmark = landmarks[Math.floor(Math.random() * landmarks.length)];
+        text = "¿En qué país está " + landmark.name + "?";
+        correctAnswer = landmark.country;
+        options = [correctAnswer, ...shuffle(countries.filter(c => c.name !== correctAnswer)).slice(0,3).map(c => c.name)];
+      } else if (currentMode === "neighbor") {
+        text = "¿Cuál de estos países comparte frontera con España?";
+        correctAnswer = "Francia";
+        options = ["Francia", "Japón", "Australia", "Canadá"];
+      } else if (currentMode === "truefalse") {
+        const statementTrue = Math.random() > 0.5;
+        const statementCountry = statementTrue ? country : countries.find(c => c.continent !== country.continent);
+        text = "¿" + statementCountry.capital + " es la capital de " + statementCountry.name + "?";
+        correctAnswer = statementTrue ? "Verdadero" : "Falso";
+        options = ["Verdadero", "Falso"];
+      } else if (currentMode === "survival") {
+        text = "❤️ Vidas: " + survivalLives + " — ¿Cuál es la capital de " + country.name + "?";
+        correctAnswer = country.capital;
+        options = [correctAnswer, ...shuffle(countries.filter(c => c !== country)).slice(0,3).map(c => c.capital)];
+      } else if (currentMode === "chain") {
+        if (chainLast) {
+          text = "🔗 Cadena: ¿cuál es la capital de " + country.name + "?";
+        } else {
+          text = "🔗 Empieza la cadena: ¿cuál es la capital de " + country.name + "?";
+        }
+        correctAnswer = country.capital;
+        chainLast = country.name;
+        options = [correctAnswer, ...shuffle(countries.filter(c => c !== country)).slice(0,3).map(c => c.capital)];
+      } else {
+        text = "📍 Pulsa en el mapa para encontrar " + country.name + ".";
+        showTargetHint(country);
+        $("question").textContent = text;
+        return;
+      }
+
+      $("question").textContent = text;
+      currentQuestion.correctAnswer = correctAnswer;
+      currentQuestion.options = shuffle(options);
+
+      currentQuestion.options.forEach(option => {
+        const button = document.createElement("button");
+        button.textContent = option;
+        button.onclick = () => {
+          if (answered) return;
+          if (option === correctAnswer) {
+            answerCorrect("¡Correcto! +10 XP");
+          } else {
+            answered = true;
+            $("feedback").textContent = "Incorrecto. La respuesta era " + correctAnswer + ".";
+            if (currentMode === "survival") {
+              survivalLives--;
+              $("feedback").textContent += " Vidas restantes: " + survivalLives;
+              if (survivalLives <= 0) {
+                $("feedback").textContent += " ¡Fin de la partida! Cambia de modo para volver a empezar.";
+              }
+            }
+          }
+        };
+        $("answers").appendChild(button);
+      });
+    }
+
+    function showTargetHint(country) {
+      currentQuestion.country = country;
+      $("feedback").textContent = "Busca el país aproximado en el mapa.";
+    }
+
+    function answerCorrect(message) {
+      answered = true;
+      xp += 10;
+      correct++;
+      updateStats();
+      $("feedback").textContent = message;
+    }
+
+    document.querySelectorAll("#modeButtons button").forEach(button => {
+      button.addEventListener("click", () => chooseMode(button.dataset.mode));
+    });
+
+    $("nextQuestion").addEventListener("click", newQuestion);
+    updateStats();
+    chooseMode("capital");
+
+    // 6. Duelo online
+    let duelRoomId = null;
+    let duelUid = null;
+    let duelRoomRef = null;
+    let duelUnsubscribe = null;
+    let duelAdvancing = false;
+
+    function duelStatus(message) {
+      $("duelStatus").textContent = message;
+    }
+
+    function duelName() {
+      return $("duelName").value.trim().slice(0,18) || "Explorador";
+    }
+
+    function makeRoomCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let code = "";
+      for (let i = 0; i < 6; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return code;
+    }
+
+    function duelQuestion(seed, round) {
+      let state = (Number(seed) + Number(round) * 7919) >>> 0;
+      function random() {
+        state = (Math.imul(state,1664525) + 1013904223) >>> 0;
+        return state / 4294967296;
+      }
+
+      const shuffled = [...countries];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const target = shuffled[0];
+      const options = [target, ...shuffled.filter(c => c !== target).slice(0,3)];
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+
+      return {
+        text: "¿Cuál es la capital de " + target.name + "?",
+        options: options.map(c => c.capital),
+        correctIndex: options.findIndex(c => c.capital === target.capital)
+      };
+    }
+
+    function duelScore(room, uid) {
+      let score = 0;
+      const answers = room.answers && room.answers[uid];
+      if (!answers) return 0;
+
+      for (let r = 0; r < 5; r++) {
+        const answer = answers[String(r)];
+        if (answer === undefined) continue;
+        const q = duelQuestion(room.seed, r);
+        if (Number(answer) === q.correctIndex) score += 10;
+      }
+      return score;
+    }
+
+    function showDuelQuestion(room) {
+      const round = Number(room.round);
+      $("duelGame").classList.remove("hidden");
+
+      if (room.status === "finished" || round >= 5) {
+        $("duelRound").textContent = "🏁 ¡Partida terminada!";
+        $("duelQuestion").textContent = "Resultados finales";
+        $("duelAnswers").replaceChildren();
+        $("duelFeedback").textContent = "¡Buen duelo!";
+      } else {
+        const q = duelQuestion(room.seed, round);
+        const mine = room.answers && room.answers[duelUid];
+        const alreadyAnswered = mine && mine[String(round)] !== undefined;
+
+        $("duelRound").textContent = "Pregunta " + (round + 1) + " de 5";
+        $("duelQuestion").textContent = q.text;
+        $("duelFeedback").textContent = alreadyAnswered
+          ? "Respuesta enviada. Esperando al otro jugador..."
+          : "Cada respuesta correcta vale 10 puntos.";
+
+        const box = $("duelAnswers");
+        box.replaceChildren();
+
+        q.options.forEach((option,index) => {
+          const button = document.createElement("button");
+          button.textContent = option;
+          button.disabled = Boolean(alreadyAnswered) || room.status !== "playing";
+          button.onclick = async () => {
+            box.querySelectorAll("button").forEach(b => b.disabled = true);
+            try {
+              await duelRoomRef.child("answers/" + duelUid + "/" + round).set(index);
+            } catch (error) {
+              $("duelFeedback").textContent = "No se pudo enviar: " + error.message;
+            }
+          };
+          box.appendChild(button);
+        });
+      }
+
+      const players = [
+        [room.hostUid,room.hostName || "Anfitrión"],
+        [room.guestUid,room.guestName || "Invitado"]
+      ].filter(p => p[0]);
+
+      $("duelScores").replaceChildren();
+      players.forEach(([uid,name]) => {
+        const line = document.createElement("p");
+        line.textContent = name + ": " + duelScore(room,uid) + " puntos";
+        $("duelScores").appendChild(line);
+      });
+    }
+
+    function watchDuelRoom() {
+      if (duelUnsubscribe) duelUnsubscribe();
+      duelRoomRef = db.ref("rooms/" + duelRoomId);
+
+      const handler = async snapshot => {
+        if (!snapshot.exists()) {
+          duelStatus("La sala no existe.");
+          return;
+        }
+
+        const room = snapshot.val();
+        if (room.hostUid !== duelUid && room.guestUid !== duelUid) {
+          duelStatus("No formas parte de esta sala.");
+          return;
+        }
+
+        duelStatus("Sala " + duelRoomId + " · " +
+          (room.status === "waiting" ? "Esperando jugador..." :
+           room.status === "finished" ? "Partida finalizada." : "Partida en curso."));
+
+        if (room.hostUid === duelUid && room.guestUid && room.status === "waiting") {
+          try {
+            await duelRoomRef.child("status").set("playing");
+          } catch (error) {
+            duelStatus("No se pudo iniciar: " + error.message);
+          }
+        }
+
+        showDuelQuestion(room);
+
+        const round = Number(room.round);
+        const players = [room.hostUid,room.guestUid].filter(Boolean);
+        const answers = room.answers || {};
+        const bothAnswered = players.length === 2 &&
+          players.every(uid => answers[uid] && answers[uid][String(round)] !== undefined);
+
+        if (room.hostUid === duelUid && room.status === "playing" &&
+            bothAnswered && !duelAdvancing) {
+          duelAdvancing = true;
+          try {
+            if (round >= 4) {
+              await duelRoomRef.update({round:"5",status:"finished"});
+            } else {
+              await duelRoomRef.child("round").set(String(round + 1));
+            }
+          } catch (error) {
+            duelStatus("Error al avanzar: " + error.message);
+          } finally {
+            duelAdvancing = false;
+          }
+        }
+      };
+
+      duelRoomRef.on("value",handler,error => {
+        duelStatus("Error de Firebase: " + error.message);
+      });
+
+      duelUnsubscribe = () => duelRoomRef.off("value",handler);
+    }
+
+    async function ensureDuelAuth() {
+      if (auth.currentUser) return auth.currentUser;
+      const credential = await auth.signInAnonymously();
+      return credential.user;
+    }
+
+    $("duelCreate").onclick = async () => {
+      $("duelCreate").disabled = true;
+      try {
+        const user = await ensureDuelAuth();
+        duelUid = user.uid;
+        let created = false;
+
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const code = makeRoomCode();
+          const ref = db.ref("rooms/" + code);
+
+          try {
+            await ref.set({
+              hostUid: duelUid,
+              hostName: duelName(),
+              status: "waiting",
+              round: "0",
+              seed: Date.now(),
+              createdAt: Date.now()
+            });
+
+            duelRoomId = code;
+            $("duelCode").value = code;
+            watchDuelRoom();
+            duelStatus("Sala creada: " + code + ". ¡Comparte el código!");
+            created = true;
+            break;
+          } catch (error) {
+            // Un código ocupado no se puede sobrescribir según las reglas.
+            if (attempt === 4) throw error;
+          }
+        }
+
+        if (!created) throw new Error("No se pudo crear la sala.");
+      } catch (error) {
+        duelStatus("Error al crear la sala: " + error.message);
+      } finally {
+        $("duelCreate").disabled = false;
+      }
+    };
+
+    $("duelJoin").onclick = async () => {
+      $("duelJoin").disabled = true;
+      try {
+        const code = $("duelCode").value.trim().toUpperCase();
+        if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
+          throw new Error("El código debe tener 6 caracteres válidos.");
+        }
+
+        const user = await ensureDuelAuth();
+        duelUid = user.uid;
+        duelRoomId = code;
+        duelRoomRef = db.ref("rooms/" + code);
+
+        // No se lee la sala antes de unirse: las reglas solo permiten
+        // leer a los participantes. Firebase valida el acceso al escribir.
+        await duelRoomRef.child("guestUid").set(duelUid);
+        await duelRoomRef.child("guestName").set(duelName());
+
+        watchDuelRoom();
+      } catch (error) {
+        duelStatus("No se pudo entrar. Comprueba el código y las reglas de Firebase.");
+      } finally {
+        $("duelJoin").disabled = false;
+      }
+    };
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        duelUid = user.uid;
+        if (!duelRoomId) duelStatus("Conectado. Crea una sala o únete a una.");
+      } else {
+        duelStatus("Preparando conexión segura...");
+      }
+    });
+  </script>
 </body>
 </html>
