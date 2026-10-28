@@ -223,7 +223,6 @@
       <div id="questionVisual" style="text-align: center;"></div>
       <div id="answers" class="answer-grid"></div>
       
-      <!-- Entrada de texto para respuestas escritas (Monumentos, Fronteras, etc.) -->
       <div id="writeContainer" class="hidden">
         <label for="writeInput" id="writeLabel">Escribe tu respuesta:</label>
         <div style="display: flex; gap: 8px;">
@@ -234,7 +233,6 @@
 
       <p id="feedback" class="status" aria-live="polite"></p>
       
-      <!-- Mapa mudo interactivo sin etiquetas geográficas innecesarias -->
       <div id="mapContainer" class="hidden">
         <div id="map"></div>
       </div>
@@ -275,7 +273,6 @@
   <script>
     "use strict";
 
-    // 1. Configuración Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyC41Q3nPZLjwVcx7gx2mVdjxOwVFmZcic4",
       authDomain: "atlas-quest-19eb8.firebaseapp.com",
@@ -291,7 +288,6 @@
     const db = firebase.database();
     const $ = id => document.getElementById(id);
 
-    // 2. Base de datos exhaustiva de países soberanos mundiales con capitales, coordenadas, siluetas/banderas y fronteras reales
     const countries = [
       {name:"España", capital:"Madrid", continent:"Europa", code:"es", lat:40.42, lon:-3.70, neighbors:["Portugal", "Francia", "Andorra", "Marruecos"], capitalImg:"https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=400&q=80"},
       {name:"Francia", capital:"París", continent:"Europa", code:"fr", lat:48.86, lon:2.35, neighbors:["España", "Andorra", "Italia", "Suiza", "Alemania", "Luxemburgo", "Bélgica"], capitalImg:"https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400&q=80"},
@@ -313,7 +309,6 @@
       {name:"Rusia", capital:"Moscú", continent:"Europa/Asia", code:"ru", lat:55.75, lon:37.61, neighbors:["Noruega", "Finlandia", "Estonia", "Letonia", "Bielorrusia", "Ucrania", "Georgia", "Azerbaiyán", "Kazajistán", "Mongolia", "China", "Corea del Norte"], capitalImg:"https://images.unsplash.com/photo-1513326738677-b964603b136d?w=400&q=80"}
     ];
 
-    // Banco masivo de animales específicos con distribución natural rigurosa
     const animalsDB = [
       {animal: "Tigre siberiano", continent: "Asia (Siberia / Rusia oriental)"},
       {animal: "Lémur de cola anillada", continent: "África (Madagascar)"},
@@ -327,7 +322,6 @@
       {animal: "Pingüino emperador", continent: "Antártida"}
     ];
 
-    // Banco de monumentos mundiales para respuesta escrita
     const monumentsDB = [
       {name: "Torre Eiffel", country: "Francia", img: "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=400&q=80"},
       {name: "Coliseo Romano", country: "Italia", img: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400&q=80"},
@@ -337,7 +331,6 @@
       {name: "Taj Mahal", country: "India", img: "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=400&q=80"}
     ];
 
-    // Banco amplio de datos geográficos avanzados y curiosos (Verdadero / Falso)
     const trueFalseDB = [
       {text: "El lago Baikal en Siberia contiene aproximadamente el 20% del agua dulce no congelada de todo el planeta.", answer: "Verdadero", explanation: "Verdadero. Es el lago más profundo y voluminoso del mundo."},
       {text: "El punto terrestre más seco del planeta es el desierto del Sahara.", answer: "Falso", explanation: "Falso. El lugar más seco es el Desierto de Atacama en Chile."},
@@ -346,7 +339,6 @@
       {text: "Francia es el país del mundo que abarca más husos horarios (zonas horarias) debido a sus territorios de ultramar.", answer: "Verdadero", explanation: "Verdadero. Gracias a sus departamentos y territorios de ultramar, supera incluso a Rusia."}
     ];
 
-    // Banco de preguntas de climas y vegetación para Supervivencia
     const survivalDB = [
       {q: "¿Qué vegetación y adaptaciones predominan en la tundra?", options: ["Musgos, líquenes y plantas enanas sin raíces profundas", "Árboles gigantes de hoja caduca", "Palmeras y vegetación selvática densa", "Cactáceas con grandes reservas de agua"], correct: "Musgos, líquenes y plantas enanas sin raíces profundas"},
       {q: "¿Qué condiciones atmosféricas determinan y favorecen una selva tropical húmeda?", options: ["Altas temperaturas constantes y abundantes precipitaciones todo el año", "Inviernos polares largos y escasas lluvias", "Temperaturas templadas con sequía estival extrema", "Vientos secos continuos de alta montaña"], correct: "Altas temperaturas constantes y abundantes precipitaciones todo el año"},
@@ -354,14 +346,13 @@
       {q: "¿Qué diferencia principal existe entre el clima mediterráneo y el oceánico?", options: ["El mediterráneo tiene veranos secos y calurosos; el oceánico presenta precipitaciones regulares todo el año", "El oceánico es extremadamente árido", "El mediterráneo tiene temperaturas bajo cero perpetuas", "No existe diferencia en pluviosidad"], correct: "El mediterráneo tiene veranos secos y calurosos; el oceánico presenta precipitaciones regulares todo el año"}
     ];
 
-    // 3. Estado del juego
     let xp = Number(localStorage.getItem("aq_xp") || 0);
     let correct = Number(localStorage.getItem("aq_correct") || 0);
     let currentMode = "territories";
     let answered = false;
     let survivalLives = 3;
     let chainCurrent = null;
-    let borderPathActive = null; // Para el modo 5 y 9 (mapa interactivo con colores verde/rojo)
+    let borderPathActive = null;
 
     function updateStats() {
       $("xp").textContent = xp + " XP";
@@ -371,19 +362,20 @@
       localStorage.setItem("aq_correct", correct);
     }
 
-    // Mapa Leaflet mudo limpio sin etiquetas innecesarias
     let map = null;
     let markerLayer = null;
 
     function initMap() {
       if (!map) {
+        // Mapa mudo estándar de OpenStreetMap optimizado y limpio
         map = L.map("map", { zoomControl: true, attributionControl: false }).setView([25, 0], 2);
-        // Usamos un mapa base limpio estilo cartografía neutra sin saturación
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png", {
-          maxZoom: 18
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 18,
+          subdomains: 'abc'
         }).addTo(map);
         markerLayer = L.layerGroup().addTo(map);
       }
+      setTimeout(() => { map.invalidateSize(); }, 200);
     }
 
     function clearMarkers() {
@@ -444,24 +436,21 @@
       const country = countries[Math.floor(Math.random() * countries.length)];
 
       if (modeToPlay === "territories") {
-        // 1. Territorios y capitales con foto de la capital y bandera/territorio
         $("question").textContent = "🏙️ ¿A qué país pertenece este territorio y cuál es su capital?";
         
         const containerDiv = document.createElement("div");
         containerDiv.style.display = "flex";
         containerDiv.style.justifyContent = "center";
-        containerDiv.style.gap = "15kpx";
+        containerDiv.style.gap = "15px";
         containerDiv.style.flexWrap = "wrap";
 
         const flagImg = document.createElement("img");
         flagImg.src = `https://flagcdn.com/w320/${country.code}.png`;
         flagImg.className = "visual-media";
-        flagImg.title = "Silueta / Bandera del territorio";
 
         const capImg = document.createElement("img");
         capImg.src = country.capitalImg;
         capImg.className = "visual-media";
-        capImg.title = "Capital: " + country.capital;
 
         containerDiv.appendChild(flagImg);
         containerDiv.appendChild(capImg);
@@ -472,7 +461,6 @@
         renderOptions(options, correctText);
 
       } else if (modeToPlay === "flags") {
-        // 2. Banderas del mundo con todo el catálogo
         $("question").textContent = "🚩 ¿A qué país pertenece esta bandera?";
         const img = document.createElement("img");
         img.src = `https://flagcdn.com/w320/${country.code}.png`;
@@ -484,7 +472,6 @@
         renderOptions(options, correctText);
 
       } else if (modeToPlay === "animals") {
-        // 3. Animales y continentes específicos
         const anim = animalsDB[Math.floor(Math.random() * animalsDB.length)];
         $("question").textContent = `🐅 ¿En qué continente o región natural vive de forma natural el/la ${anim.animal}?`;
         
@@ -493,7 +480,6 @@
         renderOptions(options, correctText);
 
       } else if (modeToPlay === "map_find" || modeToPlay === "silhouette") {
-        // 4 y 10. Encuentra el país o Silueta en mapa mudo sin nombres
         $("question").textContent = modeToPlay === "map_find" ? 
           `📍 Mapa Mudo: Haz clic sobre la ubicación exacta de ${country.name}` : 
           `🧩 Silueta: Localiza en el mapa mudo el país correspondiente a la forma de ${country.name}`;
@@ -518,13 +504,12 @@
         });
 
       } else if (modeToPlay === "borders") {
-        // 5. Descubre las fronteras (Con mapa y colores interactivos Verde/Rojo)
         if (!borderPathActive) {
           const validC = countries.filter(c => c.neighbors.length > 0);
           borderPathActive = validC[Math.floor(Math.random() * validC.length)];
         }
 
-        $("question").textContent = `🟩 País de referencia en amarillo: ${borderPathTestText(borderPathActive.name)}. Escribe un país para comprobar su frontera:`;
+        $("question").textContent = `🟩 País de referencia en amarillo: ${borderPathActive.name}. Escribe un país para comprobar su frontera:`;
         $("mapContainer").classList.remove("hidden");
         $("writeContainer").classList.remove("hidden");
         $("writeLabel").textContent = `Escribe un país limítrofe con ${borderPathActive.name}:`;
@@ -532,7 +517,6 @@
         initMap();
         map.setView([borderPathActive.lat, borderPathActive.lon], 4);
         clearMarkers();
-        // Marcar el país de referencia en amarillo/naranja
         L.circleMarker([borderPathActive.lat, borderPathActive.lon], {color: '#f1c40f', fillColor: '#f1c40f', fillOpacity: 0.9, radius: 12})
           .addTo(markerLayer).bindPopup(`Referencia: ${borderPathActive.name}`).openPopup();
 
@@ -550,13 +534,11 @@
           const isNeighbor = borderPathActive.neighbors.some(n => n.toLowerCase() === matchedCountry.name.toLowerCase());
           
           if (isNeighbor) {
-            // VERDE si comparte frontera
             L.circleMarker([matchedCountry.lat, matchedCountry.lon], {color: '#2ecc71', fillColor: '#2ecc71', fillOpacity: 0.8, radius: 10})
               .addTo(markerLayer).bindPopup(`✅ ¡Correcto! ${matchedCountry.name} limita con ${borderPathActive.name}`).openPopup();
             $("feedback").innerHTML = `<span style="color:var(--success)">✅ ¡Correcto! ${matchedCountry.name} comparte frontera terrestre con ${borderPathActive.name}. (+10 XP)</span>`;
             xp += 10; correct++; updateStats();
           } else {
-            // ROJO si no comparte frontera
             L.circleMarker([matchedCountry.lat, matchedCountry.lon], {color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.8, radius: 10})
               .addTo(markerLayer).bindPopup(`❌ Error: ${matchedCountry.name} NO limita con ${borderPathActive.name}`).openPopup();
             $("feedback").innerHTML = `<span style="color:var(--danger)">❌ Incorrecto. ${matchedCountry.name} NO comparte frontera terrestre con ${borderPathActive.name}.</span>`;
@@ -564,7 +546,6 @@
         };
 
       } else if (modeToPlay === "monuments") {
-        // 6. Monumentos con respuesta escrita (sin test)
         const mon = monumentsDB[Math.floor(Math.random() * monumentsDB.length)];
         $("question").textContent = `🏛️ ¿Cómo se llama este monumento y en qué país se encuentra? (Escribe el nombre del monumento o su país)`;
         
@@ -590,7 +571,6 @@
         };
 
       } else if (modeToPlay === "true_false") {
-        // 7. Verdadero o falso: datos difíciles y curiosos
         const tf = trueFalseDB[Math.floor(Math.random() * trueFalseDB.length)];
         $("question").textContent = `🧠 ¿Verdadero o Falso? — ${tf.text}`;
         
@@ -599,7 +579,6 @@
         });
 
       } else if (modeToPlay === "survival") {
-        // 8. Supervivencia: Climas y vegetación
         const surv = survivalDB[Math.floor(Math.random() * survivalDB.length)];
         $("question").textContent = `❤️ Vidas: ${survivalLives} — ${surv.q}`;
         
@@ -613,7 +592,6 @@
         });
 
       } else if (modeToPlay === "chain") {
-        // 9. Cadena de países con colores dinámicos (Amarillo inicial, Verde o Rojo según frontera)
         if (!chainCurrent) {
           chainCurrent = countries[Math.floor(Math.random() * countries.length)];
         }
@@ -644,7 +622,6 @@
           const isNeighbor = chainCurrent.neighbors.some(n => n.toLowerCase() === nextCountry.name.toLowerCase());
 
           if (isNeighbor) {
-            // VERDE y avanza la cadena
             chainCurrent = nextCountry;
             map.setView([chainCurrent.lat, chainCurrent.lon], 5);
             L.circleMarker([nextCountry.lat, nextCountry.lon], {color: '#2ecc71', fillColor: '#2ecc71', fillOpacity: 0.9, radius: 10})
@@ -653,17 +630,12 @@
             $("feedback").innerHTML = `<span style="color:var(--success)">✅ ¡Correcto! Frontera válida. Ahora estás en <strong>${chainCurrent.name}</strong>. (+10 XP)</span>`;
             xp += 10; correct++; updateStats();
           } else {
-            // ROJO y no te mueves
             L.circleMarker([nextCountry.lat, nextCountry.lon], {color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.9, radius: 10})
               .addTo(markerLayer).bindPopup(`❌ No hay frontera terrestre entre ${chainCurrent.name} y ${nextCountry.name}`).openPopup();
             $("feedback").innerHTML = `<span style="color:var(--danger)">❌ ${nextCountry.name} NO comparte frontera terrestre con ${chainCurrent.name}. Permaneces en el mismo país.</span>`;
           }
         };
       }
-    }
-
-    function borderPathTestText(name) {
-      return name;
     }
 
     function renderOptions(options, correctAnswer, customCallback = null) {
@@ -700,58 +672,6 @@
     $("nextQuestion").addEventListener("click", newQuestion);
     updateStats();
     chooseMode("territories");
-
-    // 6. Duelos online (Firebase sincronizado)
-    let duelRoomId = null;
-    let duelUid = null;
-    let duelRoomRef = null;
-    let duelUnsubscribe = null;
-
-    $("duelCreate").onclick = async () => {
-      try {
-        const user = auth.currentUser || (await auth.signInAnonymously()).user;
-        duelUid = user.uid;
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-        duelRoomRef = db.ref("rooms/" + code);
-        
-        await duelRoomRef.set({
-          hostUid: duelUid,
-          hostName: $("duelName").value || "Explorador",
-          status: "waiting",
-          round: 0,
-          seed: Date.now(),
-          answers: {}
-        });
-
-        duelRoomId = code;
-        $("duelStatus").textContent = "Sala creada: " + code + ". Esperando rival...";
-      } catch (e) {
-        $("duelStatus").textContent = "Error: " + e.message;
-      }
-    };
-
-    $("duelJoin").onclick = async () => {
-      const code = $("duelCode").value.trim().toUpperCase();
-      try {
-        const user = auth.currentUser || (await auth.signInAnonymously()).user;
-        duelUid = user.uid;
-        duelRoomRef = db.ref("rooms/" + code);
-        const snap = await duelRoomRef.once("value");
-        if (!snap.exists()) {
-          $("duelStatus").textContent = "La sala no existe.";
-          return;
-        }
-        await duelRoomRef.update({
-          guestUid: duelUid,
-          guestName: $("duelName").value || "Invitado",
-          status: "playing"
-        });
-        duelRoomId = code;
-        $("duelStatus").textContent = "Conectado a la sala " + code;
-      } catch (e) {
-        $("duelStatus").textContent = "Error al unirse: " + e.message;
-      }
-    };
   </script>
 </body>
 </html>
