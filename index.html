@@ -300,12 +300,12 @@
 
     // 2. Datos geográficos ampliados con fronteras directas
     const countries = [
-      {name:"España",capital:"Madrid",continent:"Europa",code:"es",lat:40.42,lon:-3.70,neighbors:["Portugal", "Francia"]},
+      {name:"España",capital:"Madrid",continent:"Europa",code:"es",lat:40.42,lon:-3.70,neighbors:["Portugal", "Francia", "Andorra", "Marruecos"]},
       {name:"Francia",capital:"París",continent:"Europa",code:"fr",lat:48.86,lon:2.35,neighbors:["España", "Andorra", "Italia", "Suiza", "Alemania", "Luxemburgo", "Bélgica"]},
       {name:"Italia",capital:"Roma",continent:"Europa",code:"it",lat:41.90,lon:12.50,neighbors:["Francia", "Suiza", "Austria", "Eslovenia"]},
       {name:"Alemania",capital:"Berlín",continent:"Europa",code:"de",lat:52.52,lon:13.40,neighbors:["Francia", "Suiza", "Austria", "República Checa", "Polonia", "Dinamarca", "Países Bajos", "Bélgica", "Luxemburgo"]},
       {name:"Portugal",capital:"Lisboa",continent:"Europa",code:"pt",lat:38.72,lon:-9.14,neighbors:["España"]},
-      {name:"Reino Unido",capital:"Londres",continent:"Europa",code:"gb",lat:51.51,lon:-0.13,neighbors:[]},
+      {name:"Reino Unido",capital:"Londres",continent:"Europa",code:"gb",lat:51.51,lon:-0.13,neighbors:["Irlanda"]},
       {name:"Noruega",capital:"Oslo",continent:"Europa",code:"no",lat:59.91,lon:10.75,neighbors:["Suecia", "Finlandia", "Rusia"]},
       {name:"Grecia",capital:"Atenas",continent:"Europa",code:"gr",lat:37.98,lon:23.73,neighbors:["Albania", "Macedonia del Norte", "Bulgaria", "Turquía"]},
       {name:"Japón",capital:"Tokio",continent:"Asia",code:"jp",lat:35.68,lon:139.69,neighbors:[]},
@@ -343,7 +343,6 @@
     let survivalLives = 3;
     let chainLast = null;
 
-    // Estado especial para el modo "Frontera a frontera"
     let borderPathState = { start: null, target: null, current: null, steps: [] };
 
     function updateStats() {
@@ -402,11 +401,6 @@
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 5 });
       }
     }
-
-    // Clicks en el mapa para los modos visuales de coordenadas / shape
-    document.addEventListener("click", (e) => {
-      // Delegación o control directo si hace falta
-    });
 
     // 5. Gestión de Modos y Preguntas
     function shuffle(items) {
@@ -515,7 +509,6 @@
         initMap();
         showTargetOnMap({lat: 20, lon: 0}, "Explora el mapa y pulsa cerca de " + country.name);
         
-        // Listener interactivo para mapa
         map.off("click");
         map.on("click", event => {
           if (answered) return;
@@ -532,7 +525,6 @@
         $("question").textContent = text;
         return;
       } else if (currentMode === "borderpath") {
-        // Reto de frontera a frontera
         const validPairs = countries.filter(c => c.neighbors && c.neighbors.length > 0);
         const start = validPairs[Math.floor(Math.random() * validPairs.length)];
         let target = validPairs[Math.floor(Math.random() * validPairs.length)];
@@ -541,7 +533,7 @@
         }
 
         borderPathState = { start, target, current: start, steps: [start.name] };
-        text = `🌉 Reto: Conecta desde **${start.name}** hasta **${target.name}** introduciendo países limítrofes paso a paso.`;
+        text = `🌉 Reto: Conecta desde <strong>${start.name}</strong> hasta <strong>${target.name}</strong> introduciendo países limítrofes paso a paso.`;
         
         $("mapContainer").classList.remove("hidden");
         $("borderPathContainer").classList.remove("hidden");
@@ -578,7 +570,6 @@
       });
     }
 
-    // Manejador interactivo para el reto de fronteras
     $("borderSubmit").onclick = () => {
       if (answered) return;
       const val = $("borderInput").value.trim().toLowerCase();
@@ -835,73 +826,74 @@
       try {
         const user = await ensureDuelAuth();
         duelUid = user.uid;
-        let created = false;
 
         for (let attempt = 0; attempt < 5; attempt++) {
           const code = makeRoomCode();
           const ref = db.ref("rooms/" + code);
+          const snap = await ref.once("value");
 
-          try {
+          if (!snap.exists()) {
             await ref.set({
               hostUid: duelUid,
               hostName: duelName(),
               status: "waiting",
-              round: "0",
+              round: 0,
               seed: Date.now(),
-              createdAt: Date.now()
+              answers: {}
             });
-
             duelRoomId = code;
-            $("duelCode").value = code;
+            duelStatus("Sala creada con código: " + code + ". Esperando rival...");
             watchDuelRoom();
-            duelStatus("Sala creada: " + code + ". ¡Comparte el código!");
-            created = true;
-            break;
-          } catch (error) {
-            if (attempt === 4) throw error;
+            return;
           }
         }
-
-        if (!created) throw new Error("No se pudo crear la sala.");
+        duelStatus("No se pudo generar una sala disponible.");
       } catch (error) {
-        duelStatus("Error al crear la sala: " + error.message);
+        duelStatus("Error al crear sala: " + error.message);
       } finally {
         $("duelCreate").disabled = false;
       }
     };
 
     $("duelJoin").onclick = async () => {
+      const code = $("duelCode").value.trim().toUpperCase();
+      if (code.length !== 6) {
+        duelStatus("Introduce un código de sala válido de 6 caracteres.");
+        return;
+      }
       $("duelJoin").disabled = true;
       try {
-        const code = $("duelCode").value.trim().toUpperCase();
-        if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) {
-          throw new Error("El código debe tener 6 caracteres válidos.");
-        }
-
         const user = await ensureDuelAuth();
         duelUid = user.uid;
+
+        const ref = db.ref("rooms/" + code);
+        const snap = await ref.once("value");
+
+        if (!snap.exists()) {
+          duelStatus("La sala no existe.");
+          return;
+        }
+
+        const room = snap.val();
+        if (room.status !== "waiting") {
+          duelStatus("La sala ya ha empezado o ha finalizado.");
+          return;
+        }
+
+        await ref.update({
+          guestUid: duelUid,
+          guestName: duelName()
+        });
+
         duelRoomId = code;
-        duelRoomRef = db.ref("rooms/" + code);
-
-        await duelRoomRef.child("guestUid").set(duelUid);
-        await duelRoomRef.child("guestName").set(duelName());
-
+        duelStatus("Te has unido a la sala " + code);
         watchDuelRoom();
       } catch (error) {
-        duelStatus("No se pudo entrar. Comprueba el código de sala.");
+        duelStatus("Error al unirse: " + error.message);
       } finally {
         $("duelJoin").disabled = false;
       }
     };
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        duelUid = user.uid;
-        if (!duelRoomId) duelStatus("Conectado. Crea una sala o únete a una.");
-      } else {
-        duelStatus("Preparando conexión segura...");
-      }
-    });
   </script>
 </body>
 </html>
